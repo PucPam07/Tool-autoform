@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.log
+.system_generated/
+.tempmediaStorage/
+browser/
+*.webp
+*.png

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Forms Auto-Filler Premium</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN for live answer distribution statistics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons for premium modern iconography -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1>Google Forms Auto-Filler Pro</h1>
+      <p>Tự động điền biểu mẫu Google Forms theo tỷ lệ câu trả lời cấu hình trước</p>
+    </header>
+
+    <!-- Error/Alert Banner -->
+    <div id="error-banner" class="alert-banner hidden">
+      <i data-lucide="alert-triangle"></i>
+      <span id="error-message">Đã xảy ra lỗi</span>
+    </div>
+
+    <!-- Step 1: Input Form URL -->
+    <section class="glass-panel url-section">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        <i data-lucide="link" style="color: var(--secondary);"></i>
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Liên kết Google Form</h3>
+      </div>
+      <div class="input-group">
+        <input type="text" id="form-url" placeholder="Dán link Google Form (dạng https://docs.google.com/forms/.../viewform hoặc /formResponse)" value="">
+        <button id="btn-parse" class="btn">
+          <i data-lucide="search"></i>
+          <span>Phân tích Form</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Loading Placeholder -->
+    <div id="loading-container" class="glass-panel flex-center hidden" style="flex-direction: column; gap: 1rem; padding: 3rem 0;">
+      <div class="spinner"></div>
+      <p style="color: var(--text-secondary); font-weight: 500;">Đang tải và phân tích cấu trúc Google Form...</p>
+    </div>
+
+    <!-- Step 2: Form Configuration (Hidden by default, shown after parsing) -->
+    <main id="config-section" class="hidden">
+      <div class="glass-panel" style="margin-bottom: 1.5rem; background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2);">
+        <h2 id="parsed-form-title" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem;">Tiêu đề Form</h2>
+        <p id="parsed-form-desc" style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.4;">Mô tả form</p>
+      </div>
+
+      <div class="config-layout">
+        <!-- Left: Question configuration -->
+        <div class="questions-container">
+          <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="list-todo" style="color: var(--primary);"></i>
+            Cấu hình tỷ lệ câu trả lời
+          </h3>
+          <div id="questions-list">
+            <!-- Dynamic questions injected here -->
+          </div>
+        </div>
+
+        <!-- Right: Submit Settings -->
+        <div class="settings-container">
+          <div class="glass-panel settings-card">
+            <h3 class="settings-title">Cài đặt chạy</h3>
+            <div class="settings-group">
+              <div class="settings-item">
+                <label for="submit-count">Tổng số lượng lượt gửi</label>
+                <input type="number" id="submit-count" value="100" min="1">
+              </div>
+              <div class="settings-item">
+                <label for="submit-threads">Số luồng gửi đồng thời (Threads)</label>
+                <input type="number" id="submit-threads" value="5" min="1" max="50">
+              </div>
+              <div class="settings-item">
+                <label for="submit-delay">Độ trễ giữa các lần gửi (ms)</label>
+                <input type="number" id="submit-delay" value="200" min="0" step="50">
+              </div>
+            </div>
+
+            <button id="btn-start" class="btn" style="width: 100%; justify-content: center; height: 3.25rem; font-size: 1.1rem;">
+              <i data-lucide="play"></i>
+              <span>Bắt đầu tự động gửi</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Step 3: Run & Progress Dashboard (Hidden by default, shown when running) -->
+    <section id="dashboard-section" class="hidden">
+      <div class="dashboard-layout">
+        <!-- Left: Progress console -->
+        <div class="glass-panel">
+          <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="activity" style="color: var(--secondary);"></i>
+              Tiến trình gửi
+            </span>
+            <span id="session-status-badge" class="question-type-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">Đang khởi tạo</span>
+          </h3>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-success">0</div>
+              <div class="stat-label">Thành công</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-fail">0</div>
+              <div class="stat-label">Thất bại</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-remaining">0</div>
+              <div class="stat-label">Còn lại</div>
+            </div>
+          </div>
+
+          <div class="progress-container">
+            <div id="progress-bar" class="progress-bar-fill"></div>
+          </div>
+
+          <!-- Controls -->
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <button id="btn-pause" class="btn btn-secondary flex-center" style="flex: 1;">
+              <i data-lucide="pause"></i>
+              <span>Tạm dừng</span>
+            </button>
+            <button id="btn-resume" class="btn btn-secondary flex-center hidden" style="flex: 1;">
+              <i data-lucide="play"></i>
+              <span>Tiếp tục</span>
+            </button>
+            <button id="btn-stop" class="btn btn-danger flex-center" style="flex: 1;">
+              <i data-lucide="square"></i>
+              <span>Dừng lại</span>
+            </button>
+          </div>
+
+          <!-- Log Console -->
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; color: var(--text-secondary);">
+            <i data-lucide="terminal"></i>
+            Nhật ký hành trình (Live Logs)
+          </h4>
+          <div id="log-console" class="console-panel">
+            <!-- Realtime logs stream in here -->
+          </div>
+        </div>
+
+        <!-- Right: Statistical Visualisation Charts -->
+        <div class="glass-panel charts-container">
+          <h3 style="font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="bar-chart-3" style="color: var(--success);"></i>
+            Tỷ lệ câu trả lời thực tế (Real-time Stats)
+          </h3>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: -0.75rem; margin-bottom: 0.5rem;">
+            So sánh phân phối kết quả thực tế thu về (Tự động cập nhật)
+          </p>
+
+          <div id="charts-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Charts will be rendered here dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-center" style="margin-top: 1.5rem;">
+        <button id="btn-back-to-config" class="btn btn-secondary">
+          <i data-lucide="arrow-left"></i>
+          <span>Quay lại cấu hình tỷ lệ</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
