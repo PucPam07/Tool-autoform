@@ -12,13 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const parsedFormTitle = document.getElementById('parsed-form-title');
   const parsedFormDesc = document.getElementById('parsed-form-desc');
   const questionsList = document.getElementById('questions-list');
-  
+
   // Settings & Submission
   const submitCountInput = document.getElementById('submit-count');
   const submitThreadsInput = document.getElementById('submit-threads');
   const submitDelayInput = document.getElementById('submit-delay');
   const btnStart = document.getElementById('btn-start');
-  
+
   // Dashboard & Real-time section
   const dashboardSection = document.getElementById('dashboard-section');
   const statSuccess = document.getElementById('stat-success');
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const logConsole = document.getElementById('log-console');
   const sessionStatusBadge = document.getElementById('session-status-badge');
   const chartsList = document.getElementById('charts-list');
-  
+
   // Control buttons
   const btnPause = document.getElementById('btn-pause');
   const btnResume = document.getElementById('btn-resume');
@@ -93,10 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
       parsedFormData = data;
       parsedFormTitle.textContent = data.formTitle;
       parsedFormDesc.textContent = data.formDescription || 'Không có mô tả.';
-      
+
       // Inject questions configuration
       renderQuestions(data.fields);
-      
+
       loadingContainer.classList.add('hidden');
       configSection.classList.remove('hidden');
       lucide.createIcons();
@@ -117,64 +117,59 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    fields.forEach((q) => {
+    fields.forEach((q, qIdx) => {
       const isChoice = [2, 3, 4, 5, 7].includes(q.type);
       const card = document.createElement('div');
       card.className = 'question-card';
       card.dataset.qId = q.id;
       card.dataset.type = q.type;
 
-      // Header row
+      // Header row with index, title and badges (inspired by autofillform.com)
       let headerHtml = `
-        <div class="question-header">
-          <div>
+        <div class="question-header-wrapper">
+          <div class="question-index">${qIdx + 1}</div>
+          <div class="question-title-area">
             <span class="question-title">${q.title}</span>
-            ${q.required ? '<span style="color: var(--danger); margin-left: 4px; font-weight: bold;">*</span>' : ''}
+            <div class="badge-container">
+              <span class="badge badge-grey">${getQuestionTypeLabel(q.type)}</span>
+              ${q.required ? '<span class="badge badge-danger"><i data-lucide="star" style="width:12px; height:12px; fill:currentColor;"></i> Bắt buộc</span>' : ''}
+              ${isChoice && q.type !== 4 ? '<span class="badge sum-badge badge-danger">Tổng: 0% (Thiếu 100%)</span>' : ''}
+              ${q.type === 4 ? '<span class="badge badge-grey">Hộp kiểm độc lập</span>' : ''}
+            </div>
           </div>
-          <span class="question-type-badge">${getQuestionTypeLabel(q.type)}</span>
         </div>
       `;
 
       let contentHtml = '';
 
       if (isChoice) {
-        contentHtml += `<div class="options-list">`;
+        contentHtml += `<div class="option-grid">`;
         
         q.choices.forEach((choice) => {
           const defaultRatio = Math.round(100 / q.choices.length);
           
           contentHtml += `
-            <div class="option-row" data-choice-value="${choice}" style="margin-bottom: 0.75rem;">
-              <div class="option-text" title="${choice}" style="font-weight: 500; min-width: 120px;">${choice}</div>
-              <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                <input type="range" class="ratio-slider" min="0" max="100" value="${defaultRatio}" style="flex: 1;">
-                <div class="ratio-input-wrapper" style="display: flex; align-items: center; gap: 0.25rem; shrink: 0;">
-                  <input type="number" class="ratio-number" min="0" max="100" value="${defaultRatio}" style="width: 55px; padding: 4px 6px; text-align: center; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: #fff;">
-                  <span style="font-size: 0.85rem; color: var(--text-secondary);">%</span>
-                </div>
-                ${q.type !== 4 ? `
-                <button class="btn-lock" type="button" title="Khóa tỷ lệ" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; padding: 6px; border-radius: 6px; transition: all 0.2s; border: 1px solid transparent;">
-                  <i data-lucide="unlock" style="width: 15px; height: 15px;"></i>
-                </button>
-                ` : ''}
+            <div class="option-card" data-choice-value="${choice}">
+              <div class="option-card-title" title="${choice}">${choice}</div>
+              <div class="percent-input-container">
+                <input type="number" class="ratio-number" min="0" max="100" value="${defaultRatio}">
+                <span class="percent-symbol">%</span>
               </div>
             </div>
           `;
         });
         
+        contentHtml += `</div>`;
+        
+        // Auto balance button
         contentHtml += `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem;">
-            <span class="ratio-sum-badge" style="font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: var(--success);">
-              Tổng cộng: <span class="ratio-sum-value">100</span>%
-            </span>
-            <button class="btn btn-secondary btn-auto-balance" type="button" style="padding: 4px 10px; font-size: 0.8rem; border-radius: 6px;">
+          <div style="display: flex; justify-content: flex-end; margin-top: 1rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem;">
+            <button class="btn btn-secondary btn-auto-balance" type="button" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px;">
               <i data-lucide="scale" style="width: 14px; height: 14px;"></i>
-              Chia đều
+              <span>Chia đều</span>
             </button>
           </div>
         `;
-        
-        contentHtml += `</div>`;
       } else {
         contentHtml += `
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -189,170 +184,58 @@ document.addEventListener('DOMContentLoaded', () => {
       card.innerHTML = headerHtml + contentHtml;
       questionsList.appendChild(card);
 
-      // Add slider and input interaction logic
+      // Add input interaction logic
       if (isChoice) {
-        const optionRows = Array.from(card.querySelectorAll('.option-row'));
-        const sumValueSpan = card.querySelector('.ratio-sum-value');
-        const sumBadge = card.querySelector('.ratio-sum-badge');
+        const optionCards = Array.from(card.querySelectorAll('.option-card'));
+        const sumBadge = card.querySelector('.sum-badge');
         const btnBalance = card.querySelector('.btn-auto-balance');
-        
-        // Initial setup for locks
-        if (q.type !== 4) {
-          optionRows.forEach(row => {
-            const lockBtn = row.querySelector('.btn-lock');
-            lockBtn.addEventListener('click', () => {
-              const isLocked = lockBtn.dataset.locked === 'true';
-              const slider = row.querySelector('.ratio-slider');
-              const number = row.querySelector('.ratio-number');
-              
-              if (isLocked) {
-                // Unlock
-                lockBtn.dataset.locked = 'false';
-                lockBtn.innerHTML = '<i data-lucide="unlock" style="width: 15px; height: 15px;"></i>';
-                lockBtn.style.color = 'var(--text-secondary)';
-                lockBtn.style.borderColor = 'transparent';
-                lockBtn.style.background = 'transparent';
-                slider.disabled = false;
-                number.disabled = false;
-              } else {
-                // Lock
-                lockBtn.dataset.locked = 'true';
-                lockBtn.innerHTML = '<i data-lucide="lock" style="width: 15px; height: 15px;"></i>';
-                lockBtn.style.color = 'var(--warning)';
-                lockBtn.style.borderColor = 'var(--warning)';
-                lockBtn.style.background = 'rgba(245, 158, 11, 0.05)';
-                slider.disabled = true;
-                number.disabled = true;
-              }
-              lucide.createIcons();
-            });
-          });
-        }
 
         const updateSum = () => {
           let sum = 0;
           card.querySelectorAll('.ratio-number').forEach(num => {
             sum += Number(num.value || 0);
           });
-          if (sumValueSpan) sumValueSpan.textContent = sum;
 
-          // Color badge based on sum limit
           if (q.type === 4) {
-            sumBadge.style.background = 'rgba(6, 182, 212, 0.1)';
-            sumBadge.style.color = 'var(--secondary)';
-            sumBadge.innerHTML = 'Hộp kiểm độc lập';
-          } else {
-            if (sum === 100) {
-              sumBadge.style.background = 'rgba(16, 185, 129, 0.1)';
-              sumBadge.style.color = 'var(--success)';
-            } else {
-              sumBadge.style.background = 'rgba(245, 158, 11, 0.1)';
-              sumBadge.style.color = 'var(--warning)';
-            }
-          }
-        };
-
-        // Linked slider logic
-        const adjustLinkedRatios = (changedRow, newValue) => {
-          if (q.type === 4) {
-            // Checkbox options are independent, do not link
-            const slider = changedRow.querySelector('.ratio-slider');
-            const number = changedRow.querySelector('.ratio-number');
-            slider.value = newValue;
-            number.value = newValue;
-            updateSum();
+            // Checkbox sum is ignored (independent probabilities)
             return;
           }
 
-          const otherRows = optionRows.filter(r => r !== changedRow);
-          const lockedRows = otherRows.filter(r => r.querySelector('.btn-lock').dataset.locked === 'true');
-          const unlockedRows = otherRows.filter(r => r.querySelector('.btn-lock').dataset.locked !== 'true');
-
-          const sumLocked = lockedRows.reduce((sum, r) => sum + Number(r.querySelector('.ratio-number').value || 0), 0);
-
-          // V_i cannot exceed 100 - sumLocked
-          let clampedVal = Math.min(100 - sumLocked, Math.max(0, newValue));
-          
-          // If no unlocked rows, the changed row cannot change value (unless sumLocked is 100 and it was already at 0, or similar)
-          if (unlockedRows.length === 0) {
-            clampedVal = 100 - sumLocked;
+          if (sum === 100) {
+            sumBadge.textContent = 'Tổng: 100%';
+            sumBadge.className = 'badge sum-badge badge-success';
+          } else if (sum < 100) {
+            sumBadge.textContent = `Tổng: ${sum}% (Thiếu ${100 - sum}%)`;
+            sumBadge.className = 'badge sum-badge badge-danger';
+          } else {
+            sumBadge.textContent = `Tổng: ${sum}% (Thừa ${sum - 100}%)`;
+            sumBadge.className = 'badge sum-badge badge-danger';
           }
-
-          // Update changed row
-          changedRow.querySelector('.ratio-slider').value = clampedVal;
-          changedRow.querySelector('.ratio-number').value = clampedVal;
-
-          if (unlockedRows.length > 0) {
-            const R = 100 - sumLocked - clampedVal;
-            const sumUnlocked = unlockedRows.reduce((sum, r) => sum + Number(r.querySelector('.ratio-number').value || 0), 0);
-
-            let newVals = [];
-            if (sumUnlocked > 0) {
-              unlockedRows.forEach(r => {
-                const curVal = Number(r.querySelector('.ratio-number').value || 0);
-                const share = Math.round(R * (curVal / sumUnlocked));
-                newVals.push({ row: r, val: share });
-              });
-            } else {
-              unlockedRows.forEach(r => {
-                const share = Math.round(R / unlockedRows.length);
-                newVals.push({ row: r, val: share });
-              });
-            }
-
-            // Adjust rounding errors
-            let currentSum = clampedVal + sumLocked + newVals.reduce((sum, item) => sum + item.val, 0);
-            let diff = 100 - currentSum;
-            if (diff !== 0 && newVals.length > 0) {
-              // Add/subtract the difference to the unlocked row with the largest value
-              newVals.sort((a, b) => b.val - a.val);
-              newVals[0].val = Math.max(0, newVals[0].val + diff);
-            }
-
-            // Update DOM
-            newVals.forEach(item => {
-              item.row.querySelector('.ratio-slider').value = item.val;
-              item.row.querySelector('.ratio-number').value = item.val;
-            });
-          }
-
-          updateSum();
         };
 
-        optionRows.forEach(row => {
-          const slider = row.querySelector('.ratio-slider');
-          const number = row.querySelector('.ratio-number');
+        // Register change listeners for number inputs
+        optionCards.forEach(opCard => {
+          const numberInput = opCard.querySelector('.ratio-number');
 
-          slider.addEventListener('input', () => {
-            adjustLinkedRatios(row, Number(slider.value));
-          });
-
-          number.addEventListener('input', () => {
-            let val = Math.min(100, Math.max(0, Number(number.value || 0)));
-            adjustLinkedRatios(row, val);
+          numberInput.addEventListener('input', () => {
+            let val = Number(numberInput.value || 0);
+            if (val < 0) val = 0;
+            if (val > 100) val = 100;
+            numberInput.value = val;
+            updateSum();
           });
         });
 
         // Initialize equal distribution
         btnBalance.addEventListener('click', () => {
-          // Unlock all first to balance properly
-          optionRows.forEach(row => {
-            const lockBtn = row.querySelector('.btn-lock');
-            if (lockBtn && lockBtn.dataset.locked === 'true') {
-              lockBtn.click();
-            }
-          });
-
-          const count = optionRows.length;
+          const count = optionCards.length;
           const base = Math.floor(100 / count);
           const remainder = 100 - (base * count);
 
-          optionRows.forEach((row, idx) => {
-            const slider = row.querySelector('.ratio-slider');
-            const number = row.querySelector('.ratio-number');
+          optionCards.forEach((opCard, idx) => {
+            const numberInput = opCard.querySelector('.ratio-number');
             const val = base + (idx < remainder ? 1 : 0);
-            slider.value = val;
-            number.value = val;
+            numberInput.value = val;
           });
           updateSum();
         });
@@ -385,10 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if ([2, 3, 4, 5, 7].includes(type)) {
         // Collect ratios
         const ratios = {};
-        const optionRows = card.querySelectorAll('.option-row');
+        const optionCards = card.querySelectorAll('.option-card');
         let sum = 0;
 
-        optionRows.forEach(row => {
+        optionCards.forEach(row => {
           const choiceVal = row.dataset.choiceValue;
           const ratioVal = Number(row.querySelector('.ratio-number').value || 0);
           ratios[choiceVal] = ratioVal;
@@ -445,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       btnStart.disabled = true;
       btnStart.innerHTML = '<div class="spinner" style="width:16px; height:16px; border-width:2px;"></div><span>Đang kết nối...</span>';
-      
+
       const res = await fetch('/api/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -456,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(data.error || 'Không thể bắt đầu gửi form.');
 
       activeSessionId = data.sessionId;
-      
+
       // Clear logs and prepare dashboard UI
       logConsole.innerHTML = '';
       statSuccess.textContent = '0';
@@ -464,14 +347,14 @@ document.addEventListener('DOMContentLoaded', () => {
       statRemaining.textContent = count;
       progressBar.style.width = '0%';
       sessionStatusBadge.textContent = 'Đang khởi tạo';
-      
+
       // Init Chart views
       initCharts(questions, count);
 
       // Transition screen views
       configSection.classList.add('hidden');
       dashboardSection.classList.remove('hidden');
-      
+
       // Connect to SSE stream channel
       startProgressStream(activeSessionId);
     } catch (err) {
@@ -495,22 +378,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const chartCard = document.createElement('div');
       chartCard.className = 'chart-card';
-      
+
       const title = document.createElement('h4');
       title.className = 'chart-title';
       title.textContent = q.title;
       chartCard.appendChild(title);
-      
+
       const chartWrapper = document.createElement('div');
       chartWrapper.className = 'chart-wrapper';
       const canvas = document.createElement('canvas');
       chartWrapper.appendChild(canvas);
       chartCard.appendChild(chartWrapper);
-      
+
       chartsList.appendChild(chartCard);
 
       const labels = q.choices;
-      
+
       // Calculate target counts based on user ratio configuration
       let targetPercentages = [];
       let targetCounts = [];
@@ -665,9 +548,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateStatusBadge(status) {
     sessionStatusBadge.textContent = status === 'running' ? 'Đang chạy' :
-                                    status === 'paused' ? 'Đã tạm dừng' :
-                                    status === 'stopped' ? 'Đã dừng' :
-                                    status === 'completed' ? 'Hoàn thành' : status;
+      status === 'paused' ? 'Đã tạm dừng' :
+        status === 'stopped' ? 'Đã dừng' :
+          status === 'completed' ? 'Hoàn thành' : status;
 
     if (status === 'running') {
       sessionStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
@@ -695,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ action })
       });
       const data = await res.json();
-      
+
       updateStatusBadge(data.status);
 
       if (action === 'pause') {
