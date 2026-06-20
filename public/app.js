@@ -56,13 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper: Get question type text
   function getQuestionTypeLabel(type) {
     switch (type) {
-      case 0: return 'Văn bản ngắn';
-      case 1: return 'Đoạn văn';
-      case 2: return 'Trắc nghiệm';
-      case 3: return 'Hộp thả xuống';
-      case 4: return 'Hộp kiểm';
-      case 5: return 'Thang đo tuyến tính';
-      case 7: return 'Lưới trắc nghiệm';
+      case 0: return 'Văn Bản Ngắn';
+      case 1: return 'Đoạn Văn';
+      case 2: return 'Trắc Nghiệm';
+      case 3: return 'Hộp Thả Xuống';
+      case 4: return 'Hộp Kiểm';
+      case 5: return 'Thang Đo Tuyến Tính';
+      case 7: return 'Lưới Trắc Nghiệm';
       default: return 'Khác';
     }
   }
@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="question-title">${q.title}</span>
             <div class="badge-container">
               <span class="badge badge-grey">${getQuestionTypeLabel(q.type)}</span>
-              ${q.required ? '<span class="badge badge-danger"><i data-lucide="star" style="width:12px; height:12px; fill:currentColor;"></i> Bắt buộc</span>' : ''}
-              ${isChoice && q.type !== 4 ? '<span class="badge sum-badge badge-danger">Tổng: 0% (Thiếu 100%)</span>' : ''}
+              ${q.required ? '<span class="badge badge-danger"><i data-lucide="star" style="width:12px; height:12px;"></i> Bắt buộc</span>' : ''}
+              ${isChoice && q.type !== 4 ? '<span class="badge sum-badge badge-danger"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle" style="flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> <span>Tổng: 0% (Thiếu 100%)</span></span>' : ''}
               ${q.type === 4 ? '<span class="badge badge-grey">Hộp kiểm độc lập</span>' : ''}
             </div>
           </div>
@@ -202,13 +202,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           if (sum === 100) {
-            sumBadge.textContent = 'Tổng: 100%';
+            sumBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle" style="flex-shrink: 0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> <span>Tổng: 100%</span>`;
             sumBadge.className = 'badge sum-badge badge-success';
           } else if (sum < 100) {
-            sumBadge.textContent = `Tổng: ${sum}% (Thiếu ${100 - sum}%)`;
+            sumBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle" style="flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> <span>Tổng: ${sum}% (Thiếu ${100 - sum}%)</span>`;
             sumBadge.className = 'badge sum-badge badge-danger';
           } else {
-            sumBadge.textContent = `Tổng: ${sum}% (Thừa ${sum - 100}%)`;
+            sumBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle" style="flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> <span>Tổng: ${sum}% (Thừa ${sum - 100}%)</span>`;
             sumBadge.className = 'badge sum-badge badge-danger';
           }
         };

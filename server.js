@@ -40,6 +40,7 @@ async function fetchAndParseForm(url) {
     throw new Error(`Không thể tải trang Google Form (Mã lỗi: ${response.status})`);
   }
 
+  const resolvedUrl = response.url || formUrl;
   const html = await response.text();
 
   // Extract FB_PUBLIC_LOAD_DATA_
@@ -144,7 +145,7 @@ async function fetchAndParseForm(url) {
         
         parsedFields.push({
           id: rowId,
-          title: `${questionTitle} [${rowTitle}]`,
+          title: rowTitle || questionTitle,
           type: 7, // Grid sub-question
           choices: columns,
           required: required
@@ -181,7 +182,7 @@ async function fetchAndParseForm(url) {
   }
 
   // Find post URL
-  const postUrl = formUrl.replace('/viewform', '/formResponse');
+  const postUrl = resolvedUrl.replace('/viewform', '/formResponse');
 
   return {
     formTitle,
