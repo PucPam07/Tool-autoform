@@ -16,8 +16,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Settings & Submission
   const submitCountInput = document.getElementById('submit-count');
   const submitThreadsInput = document.getElementById('submit-threads');
-  const submitDelayInput = document.getElementById('submit-delay');
+  const submitDelayMinInput = document.getElementById('submit-delay-min');
+  const submitDelayMaxInput = document.getElementById('submit-delay-max');
+  const timeRestrictionSelect = document.getElementById('time-restriction');
+  const customTimeRangeContainer = document.getElementById('custom-time-range');
+  const timeStartInput = document.getElementById('time-start');
+  const timeEndInput = document.getElementById('time-end');
   const btnStart = document.getElementById('btn-start');
+  const btnSaveConfig = document.getElementById('btn-save-config');
+
+  // Navigation and Views
+  const navHome = document.getElementById('nav-home');
+  const navHistory = document.getElementById('nav-history');
+  const viewHome = document.getElementById('view-home');
+  const viewHistory = document.getElementById('view-history');
+  const historyGrid = document.getElementById('history-grid');
+  const historyListEmpty = document.getElementById('history-list-empty');
 
   // Dashboard & Real-time section
   const dashboardSection = document.getElementById('dashboard-section');
@@ -123,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'question-card';
       card.dataset.qId = q.id;
       card.dataset.type = q.type;
+      card.dataset.pageIndex = q.pageIndex !== undefined ? q.pageIndex : 0;
 
       // Header row with index, title and badges (inspired by autofillform.com)
       let headerHtml = `
@@ -291,7 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
           title: qTitle,
           choices: originalQuestion.choices,
           required: qRequired,
-          ratios: ratios
+          ratios: ratios,
+          pageIndex: Number(card.dataset.pageIndex || 0)
         });
       } else {
         // Collect custom text responses
@@ -305,7 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
           type: type,
           title: qTitle,
           required: qRequired,
-          textValues: lines
+          textValues: lines,
+          pageIndex: Number(card.dataset.pageIndex || 0)
         });
       }
     });
@@ -314,15 +331,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const count = Number(submitCountInput.value || 100);
     const threads = Number(submitThreadsInput.value || 5);
-    const delay = Number(submitDelayInput.value || 200);
+    const delayMin = Number(submitDelayMinInput.value || 2);
+    const delayMax = Number(submitDelayMaxInput.value || 5);
+    const timeRestriction = timeRestrictionSelect.value || 'unlimited';
+    const timeStart = timeStartInput.value || '08:00';
+    const timeEnd = timeEndInput.value || '17:00';
 
     const payload = {
       postUrl: parsedFormData.postUrl,
       fbzx: parsedFormData.fbzx,
+      pageHistory: parsedFormData.pageHistory || '0',
+      pageCount: parsedFormData.pageCount || 1,
       questions,
       count,
       threads,
-      delay
+      delayMin,
+      delayMax,
+      timeRestriction,
+      timeStart,
+      timeEnd
     };
 
     try {
@@ -611,5 +638,270 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboardSection.classList.add('hidden');
     configSection.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // 1. Time restriction dropdown show/hide logic
+  timeRestrictionSelect.addEventListener('change', () => {
+    if (timeRestrictionSelect.value === 'custom') {
+      customTimeRangeContainer.classList.remove('hidden');
+    } else {
+      customTimeRangeContainer.classList.add('hidden');
+    }
+  });
+
+  // 2. Navigation menu logic
+  navHome.addEventListener('click', (e) => {
+    e.preventDefault();
+    navHome.classList.add('active');
+    navHistory.classList.remove('active');
+    viewHome.classList.remove('hidden');
+    viewHistory.classList.add('hidden');
+  });
+
+  navHistory.addEventListener('click', (e) => {
+    e.preventDefault();
+    navHistory.classList.add('active');
+    navHome.classList.remove('active');
+    viewHistory.classList.remove('hidden');
+    viewHome.classList.add('hidden');
+    loadHistory();
+  });
+
+  // 3. Load history and render grid list
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+
+      if (data.length === 0) {
+        historyListEmpty.classList.remove('hidden');
+        historyGrid.classList.add('hidden');
+        return;
+      }
+
+      historyListEmpty.classList.add('hidden');
+      historyGrid.classList.remove('hidden');
+      historyGrid.innerHTML = '';
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'history-card';
+
+        const updatedDate = new Date(item.updatedAt).toLocaleString('vi-VN');
+        const qCount = item.fields ? item.fields.length : 0;
+
+        card.innerHTML = `
+          <div class="history-card-header">
+            <h4 class="history-card-title" title="${item.formTitle}">${item.formTitle}</h4>
+            <div class="history-card-url" title="${item.formUrl}">${item.formUrl}</div>
+          </div>
+          <div class="history-card-meta">
+            <div class="history-meta-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-help-circle"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+              <span>${qCount} câu hỏi</span>
+            </div>
+            <div class="history-meta-item">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Lưu: ${updatedDate}</span>
+            </div>
+          </div>
+          <div class="history-card-actions">
+            <button class="btn btn-load-config" data-id="${item.id}" style="flex: 1; padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; justify-content: center; align-items: center; gap: 4px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder-open"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
+              <span>Tải cấu hình</span>
+            </button>
+            <button class="btn btn-danger btn-delete-config" data-id="${item.id}" style="padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; justify-content: center; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            </button>
+          </div>
+        `;
+        historyGrid.appendChild(card);
+      });
+
+      // Register click actions for history items
+      historyGrid.querySelectorAll('.btn-load-config').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const entry = data.find(item => item.id === id);
+          if (entry) {
+            loadSavedConfig(entry);
+          }
+        });
+      });
+
+      historyGrid.querySelectorAll('.btn-delete-config').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          if (confirm('Bạn chắc chắn muốn xóa cấu hình form này khỏi lịch sử chứ?')) {
+            try {
+              const delRes = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+              if (delRes.ok) {
+                loadHistory();
+              }
+            } catch (err) {
+              alert('Không thể xóa cấu hình: ' + err.message);
+            }
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('Lỗi khi tải lịch sử:', err);
+    }
+  }
+
+  // 4. Load saved configuration into the UI page
+  function loadSavedConfig(entry) {
+    // 1. Fill URL
+    formUrlInput.value = entry.formUrl;
+    parsedFormData = {
+      formTitle: entry.formTitle,
+      formDescription: entry.formDescription,
+      fbzx: entry.fbzx,
+      postUrl: entry.postUrl,
+      fields: entry.fields
+    };
+
+    // 2. Render questions
+    parsedFormTitle.textContent = entry.formTitle;
+    parsedFormDesc.textContent = entry.formDescription || 'Không có mô tả.';
+    renderQuestions(entry.fields);
+
+    // 3. Fill settings
+    const saved = entry.savedConfig || {};
+    submitCountInput.value = saved.submitCount || 100;
+    submitThreadsInput.value = saved.submitThreads || 5;
+    submitDelayMinInput.value = saved.delayMin !== undefined ? saved.delayMin : 2;
+    submitDelayMaxInput.value = saved.delayMax !== undefined ? saved.delayMax : 5;
+    timeRestrictionSelect.value = saved.timeRestriction || 'unlimited';
+    timeStartInput.value = saved.timeStart || '08:00';
+    timeEndInput.value = saved.timeEnd || '17:00';
+
+    // Show/hide custom time bounds container
+    if (saved.timeRestriction === 'custom') {
+      customTimeRangeContainer.classList.remove('hidden');
+    } else {
+      customTimeRangeContainer.classList.add('hidden');
+    }
+
+    // 4. Load questions inputs (ratios and texts)
+    const cards = questionsList.querySelectorAll('.question-card');
+    cards.forEach(card => {
+      const qId = card.dataset.qId;
+      const type = Number(card.dataset.type);
+      const savedQ = saved.questions ? saved.questions.find(q => String(q.id) === String(qId)) : null;
+
+      if (savedQ) {
+        if ([2, 3, 4, 5, 7].includes(type) && savedQ.ratios) {
+          // Fill option ratios
+          card.querySelectorAll('.option-card').forEach(opCard => {
+            const val = opCard.getAttribute('data-choice-value');
+            const ratioVal = savedQ.ratios[val] !== undefined ? savedQ.ratios[val] : 0;
+            opCard.querySelector('.ratio-number').value = ratioVal;
+          });
+          // Update sum validation badge
+          const updateSumBtn = card.querySelector('.btn-auto-balance');
+          if (updateSumBtn) {
+            // Find inputs change listener and trigger input event to refresh sum
+            const input = card.querySelector('.ratio-number');
+            if (input) {
+              input.dispatchEvent(new Event('input'));
+            }
+          }
+        } else if (savedQ.textValues) {
+          // Fill custom texts
+          const textAreas = card.querySelector('.text-values-input');
+          if (textAreas) {
+            textAreas.value = savedQ.textValues.join('\n');
+          }
+        }
+      }
+    });
+
+    // 5. Hide history view and show home view
+    navHome.classList.add('active');
+    navHistory.classList.remove('active');
+    viewHome.classList.remove('hidden');
+    viewHistory.classList.add('hidden');
+    configSection.classList.remove('hidden');
+    dashboardSection.classList.add('hidden');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    lucide.createIcons();
+  }
+
+  // 5. Save current UI configuration to DB
+  btnSaveConfig.addEventListener('click', async () => {
+    if (!parsedFormData) {
+      showError('Chưa có cấu hình form nào để lưu. Vui lòng phân tích form trước.');
+      return;
+    }
+
+    // Gather questions config from cards
+    const questions = [];
+    const cards = questionsList.querySelectorAll('.question-card');
+    cards.forEach(card => {
+      const qId = card.dataset.qId;
+      const type = Number(card.dataset.type);
+
+      if ([2, 3, 4, 5, 7].includes(type)) {
+        const ratios = {};
+        card.querySelectorAll('.option-card').forEach(opCard => {
+          const choiceVal = opCard.getAttribute('data-choice-value');
+          const ratioVal = Number(opCard.querySelector('.ratio-number').value || 0);
+          ratios[choiceVal] = ratioVal;
+        });
+        questions.push({ id: qId, ratios });
+      } else {
+        const textAreas = card.querySelector('.text-values-input');
+        const lines = textAreas ? textAreas.value.split('\n').map(l => l.trim()).filter(l => l.length > 0) : [];
+        questions.push({ id: qId, textValues: lines });
+      }
+    });
+
+    const payload = {
+      formUrl: formUrlInput.value.trim(),
+      formTitle: parsedFormData.formTitle,
+      formDescription: parsedFormData.formDescription,
+      fbzx: parsedFormData.fbzx,
+      postUrl: parsedFormData.postUrl,
+      fields: parsedFormData.fields,
+      savedConfig: {
+        submitCount: Number(submitCountInput.value || 100),
+        submitThreads: Number(submitThreadsInput.value || 5),
+        delayMin: Number(submitDelayMinInput.value || 2),
+        delayMax: Number(submitDelayMaxInput.value || 5),
+        timeRestriction: timeRestrictionSelect.value || 'unlimited',
+        timeStart: timeStartInput.value || '08:00',
+        timeEnd: timeEndInput.value || '17:00',
+        questions
+      }
+    };
+
+    try {
+      btnSaveConfig.disabled = true;
+      const text = btnSaveConfig.querySelector('span');
+      const origText = text.textContent;
+      text.textContent = 'Đang lưu...';
+
+      const res = await fetch('/api/history/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Lỗi khi lưu cấu hình.');
+
+      text.textContent = 'Đã lưu thành công!';
+      setTimeout(() => {
+        text.textContent = origText;
+        btnSaveConfig.disabled = false;
+      }, 1500);
+
+    } catch (err) {
+      showError(err.message);
+      btnSaveConfig.disabled = false;
+    }
   });
 });
