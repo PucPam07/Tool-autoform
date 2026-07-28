@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
+import os from 'os';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -10,26 +12,42 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Local JSON Database for saved forms
-const historyFilePath = path.join(__dirname, 'data', 'history.json');
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-  fs.mkdirSync(path.join(__dirname, 'data'));
-}
-if (!fs.existsSync(historyFilePath)) {
-  fs.writeFileSync(historyFilePath, JSON.stringify([]));
+// Local JSON Database for saved forms (safe for serverless read-only environment like Vercel)
+const dataDir = process.env.VERCEL ? path.join(os.tmpdir(), 'data') : path.join(__dirname, 'data');
+const historyFilePath = path.join(dataDir, 'history.json');
+
+try {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(historyFilePath)) {
+    fs.writeFileSync(historyFilePath, JSON.stringify([]));
+  }
+} catch (err) {
+  console.warn('Warning: Could not initialize data directory:', err.message);
 }
 
 function getHistory() {
   try {
-    const content = fs.readFileSync(historyFilePath, 'utf8');
-    return JSON.parse(content);
+    if (fs.existsSync(historyFilePath)) {
+      const content = fs.readFileSync(historyFilePath, 'utf8');
+      return JSON.parse(content);
+    }
   } catch (err) {
-    return [];
+    console.error('Error reading history:', err.message);
   }
+  return [];
 }
 
 function saveHistory(history) {
-  fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(historyFilePath, JSON.stringify(history, null, 2));
+  } catch (err) {
+    console.error('Error saving history:', err.message);
+  }
 }
 
 // Global state to track active submission sessions
@@ -711,7 +729,11 @@ app.post('/api/control/:sessionId', (req, res) => {
   res.json({ status: session.status });
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
+  });
+}
+
+export default app;
