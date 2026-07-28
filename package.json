@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "inspect": "node scripts/inspect_form.js",
+    "test-submit": "node scripts/test_submit.js"
   },
   "dependencies": {
     "express": "^4.19.2"

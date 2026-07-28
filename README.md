@@ -1,8 +1,22 @@
 # Google Forms Auto-Filler Pro 🚀
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_App-tool--autoform.vercel.app-007ACC?style=for-the-badge&logo=vercel&logoColor=white)](https://tool-autoform.vercel.app/)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Vercel Status](https://img.shields.io/badge/Deployment-Online-brightgreen?style=for-the-badge&logo=vercel&logoColor=white)](https://tool-autoform.vercel.app/)
+
+> 🌟 **Trải nghiệm trực tuyến ngay không cần cài đặt tại:** **[https://tool-autoform.vercel.app/](https://tool-autoform.vercel.app/)**
+
 Công cụ tự động điền biểu mẫu Google Forms theo tỷ lệ câu trả lời cấu hình trước với giao diện Web Dashboard cao cấp (Glassmorphism & Dark Mode). 
 
 Ứng dụng được viết hoàn toàn bằng **Node.js/Express** ở Backend (gửi POST request HTTP trực tiếp cực kỳ nhanh và nhẹ) và **Vanilla HTML/CSS/JS** ở Frontend kết hợp với **Chart.js** vẽ biểu đồ theo dõi thống kê thực tế theo thời gian thực.
+
+---
+
+## 🌐 Live Web Demo
+
+Bạn có thể sử dụng ngay công cụ trực tiếp trên trình duyệt mà không cần cài đặt môi trường:
+
+🔗 **Đường dẫn ứng dụng:** **[https://tool-autoform.vercel.app/](https://tool-autoform.vercel.app/)**
 
 ---
 
